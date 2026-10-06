@@ -1,0 +1,6 @@
+---
+title: "P8105_hw2_qc2385"
+author: "Qixuan Cao"
+date: "2026-10-06"
+output: github_document
+---

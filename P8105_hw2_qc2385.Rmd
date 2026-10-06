@@ -161,7 +161,7 @@ trash_wheel_df =
 ```
 
 What was the total weight of trash collected by Professor Trash Wheel?
-```{r}
+```{r total weight}
 trash_wheel_df |>
   filter(trash_wheel == "Professor Trash Wheel") |>
   summarize(
@@ -171,7 +171,7 @@ trash_wheel_df |>
 The total weight of trash collected by Professor Trash Wheel was 282 tons.
 
 What was the total number of cigarette butts collected by Gwynnda in June of 2022?
-```{r}
+```{r total numebr}
 trash_wheel_df |>
   filter(
     trash_wheel == "Gwynnda",
@@ -183,3 +183,88 @@ trash_wheel_df |>
   )
 ```
 Gwynnda collected 18120 cigarette butts in June 2022.
+
+
+## Problem 3
+```{r 3 basline data}
+baseline_df =
+  read_csv("data/MCI_baseline.csv", skip = 1, na = ".") |>
+  janitor::clean_names() |>
+  mutate(
+    sex = if_else(sex == 1, "male", "female"),
+    apoe4 = if_else(apoe4 == 1, "carrier", "non-carrier")
+  ) |>
+  filter(is.na(age_at_onset) | age_at_onset > current_age)
+```
+
+```{r basline questions}
+baseline_df |>
+  summarize(
+    participants = n(),
+    developed_mci = sum(!is.na(age_at_onset)),
+    mean_baseline_age = mean(current_age)
+  )
+```
+
+```{r basline proportion}
+baseline_df |>
+  filter(sex == "female") |>
+  summarize(
+    apoe4_proportion = mean(apoe4 == "carrier")
+  )
+```
+
+### problem 3 basline:
+The baseline dataset was imported with `skip = 1` to remove the descriptive first row, and `"."` was treated as missing. Sex and APOE4 status were recoded from 0/1 into labeled categories. The dataset includes participant ID, baseline age, sex, years of education, APOE4 carrier status, and age at MCI onset, which is missing for participants who remained MCI-free during follow-up. Participants whose age at onset was at or before their baseline age were excluded, as they did not meet the inclusion criterion.
+A total of 483 participants were recruited. After excluding 4 who already had MCI at baseline, 479 remained, of whom 93 developed MCI during follow-up. The average baseline age was 65.0 years. Among women in the study, 30.0% were APOE4 carriers.
+
+
+```{r 3 amyloid data}
+amyloid_df =
+  read_csv("data/mci_amyloid.csv", skip = 1, na = c("NA", "Na")) |>
+  janitor::clean_names() |>
+  rename(id = study_id) |>
+  pivot_longer(
+    baseline:time_8,
+    names_to = "time",
+    values_to = "amyloid_ratio"
+  )
+```
+
+### Problem 3 amyloid:
+The amyloid dataset was imported with `skip = 1` to remove the descriptive first row. Missing values were recorded as both `"NA"` and `"Na"`, so both were treated as missing during import. The ID variable was renamed from `study_id` to `id` to match the baseline dataset. Because the original dataset was in wide format, with separate columns for measurements at baseline and times 2, 4, 6, and 8, `pivot_longer()` was used to reshape the data into a tidy long format with one row per participant per visit. The dataset contains amyloid β 42/40 ratio measurements for 487 participants.
+
+```{r}
+mci_df =
+  inner_join(baseline_df, amyloid_df, by = "id")
+
+mci_df |>
+  summarize(
+    participants = n_distinct(id),
+    rows = n(),
+    columns = ncol(mci_df)
+  )
+
+```
+
+```{r only in baseline}
+baseline_df |>
+  anti_join(amyloid_df, by = "id") |>
+  pull(id)
+```
+
+```{r}
+amyloid_df |>
+  distinct(id) |>
+  anti_join(baseline_df, by = "id") |>
+  pull(id)
+```
+
+
+```{r output csv}
+write_csv(mci_df, "data/mci_combined.csv")
+```
+### problem 3 combined:
+Eight participants appeared only in the baseline dataset and therefore had no biomarker measurements. Sixteen participants appeared only in the amyloid dataset. Four of these participants (IDs 72, 234, 283, and 380) were present in the original baseline dataset but were excluded because they had MCI at baseline, while the remaining twelve participants (IDs 484–495) were not present in the baseline dataset. After retaining only participants who appeared in both datasets, the combined dataset contained 471 participants and 2355 observations. The final dataset included 8 variables describing participant demographics, visit time, and amyloid β 42/40 ratio. The combined dataset was exported as `mci_combined.csv` to the data directory.
+
+

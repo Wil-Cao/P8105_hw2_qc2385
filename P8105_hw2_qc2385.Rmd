@@ -99,3 +99,87 @@ subway_tidy |>
 ```
 There are 17 ADA-compliant stations.
 
+
+## Problem 2
+```{r}
+library(readxl)
+```
+
+```{r clean mr.Trash Wheel}
+mr_trash =
+ read_excel(
+    "data/202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Mr. Trash Wheel",
+    range = "A2:N709"
+  ) |>
+  janitor::clean_names() |>
+  filter(!is.na(dumpster)) |>
+  mutate(
+    sports_balls = as.integer(round(sports_balls)),
+    year = as.numeric(year),
+    trash_wheel = "Mr. Trash Wheel"
+  )
+```
+
+```{r professer_trash}
+professor_trash =
+   read_excel(
+    "data/202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Professor Trash Wheel",
+    range = "A2:M134"
+  ) |>
+  janitor::clean_names() |>
+  filter(!is.na(dumpster)) |>
+  mutate(
+    year = as.numeric(year),
+    trash_wheel = "Professor Trash Wheel"
+  )
+```
+
+```{r gwynnda_trash}
+gwynnda_trash =
+  read_excel(
+    "data/202509 Trash Wheel Collection Data.xlsx",
+    sheet = "Gwynns Falls Trash Wheel",
+    range = "A2:L351"
+  ) |>
+  janitor::clean_names() |>
+  filter(!is.na(dumpster)) |>
+  mutate(
+    year = as.numeric(year),
+    trash_wheel = "Gwynnda"
+  )
+```
+
+```{r merge}
+trash_wheel_df =
+  bind_rows(
+    mr_trash,
+    professor_trash,
+    gwynnda_trash
+  )
+```
+
+What was the total weight of trash collected by Professor Trash Wheel?
+```{r}
+trash_wheel_df |>
+  filter(trash_wheel == "Professor Trash Wheel") |>
+  summarize(
+    total_weight = sum(weight_tons, na.rm = TRUE)
+  )
+```
+The total weight of trash collected by Professor Trash Wheel was 282 tons.
+
+What was the total number of cigarette butts collected by Gwynnda in June of 2022?
+```{r}
+trash_wheel_df |>
+  filter(
+    trash_wheel == "Gwynnda",
+    year == 2022,
+    month == "June"
+  ) |>
+  summarize(
+    total_cigarette_butts = sum(cigarette_butts, na.rm = TRUE)
+  )
+```
+Gwynnda collected 18120 cigarette butts in June 2022.
